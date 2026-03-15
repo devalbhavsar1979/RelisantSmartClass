@@ -1,0 +1,281 @@
+/* Batches Page Styles - Mobile First */
+
+.batches-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.batches-content {
+  flex: 1;
+  padding: 16px 16px 76px 16px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+
+/* Batches Header */
+.batches-header {
+  margin-bottom: 24px;
+  animation: slideIn 0.5s ease;
+}
+
+.batches-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.batches-header p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Add Batch Button Section */
+.add-batch-section {
+  margin-bottom: 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.add-batch-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 300px;
+}
+
+.add-batch-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.add-batch-btn:active {
+  transform: translateY(0);
+}
+
+/* Batches Grid Section */
+.batches-section {
+  margin-bottom: 32px;
+}
+
+.batches-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Spacer for bottom nav */
+.nav-spacer {
+  height: 20px;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet: 768px and above */
+@media (min-width: 768px) {
+  .batches-content {
+    padding: 24px 24px 76px 24px;
+  }
+
+  .batches-header {
+    margin-bottom: 32px;
+  }
+
+  .batches-header h2 {
+    font-size: 28px;
+  }
+
+  .add-batch-section {
+    margin-bottom: 32px;
+  }
+
+  .add-batch-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 16px 32px;
+    font-size: 16px;
+  }
+
+  .batches-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Desktop: 1024px and above */
+@media (min-width: 1024px) {
+  .batches-content {
+    padding: 32px 32px 76px 32px;
+  }
+
+  .add-batch-btn {
+    max-width: 500px;
+  }
+
+  .batches-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+/* Mobile: 480px and below */
+@media (max-width: 480px) {
+  .batches-content {
+    padding: 12px 12px 76px 12px;
+  }
+
+  .batches-header h2 {
+    font-size: 20px;
+  }
+
+  .add-batch-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+
+  .batches-grid {
+    gap: 12px;
+  }
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container p {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Error State */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+}
+
+.error-message {
+  font-size: 16px;
+  color: #dc2626;
+  margin: 0;
+  text-align: center;
+}
+
+.retry-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+}
+
+.retry-btn:active {
+  transform: translateY(0);
+}
+
+/* Empty State */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+  text-align: center;
+}
+
+.empty-message {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.empty-subtext {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Responsive adjustments for loading/error/empty states */
+@media (min-width: 768px) {
+  .loading-container {
+    padding: 80px 20px;
+  }
+
+  .error-container {
+    padding: 50px 30px;
+  }
+
+  .empty-container {
+    padding: 80px 20px;
+  }
+
+  .empty-message {
+    font-size: 20px;
+  }
+}

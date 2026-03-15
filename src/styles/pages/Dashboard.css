@@ -1,0 +1,166 @@
+/* Dashboard Page Styles - Mobile First */
+@import '../components/SummaryCard.css';
+@import '../components/ActionCard.css';
+@import '../components/BottomNav.css';
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 16px 16px 76px 16px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+
+/* Welcome Section */
+.welcome-section {
+  margin-bottom: 32px;
+  animation: slideIn 0.5s ease;
+}
+
+.welcome-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.welcome-section p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Section Title */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 24px 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* SECTION 1: Summary Grid */
+.summary-section {
+  margin-bottom: 32px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* SECTION 2: Action Grid */
+.action-section {
+  margin-bottom: 32px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* Spacer for bottom navigation */
+.nav-spacer {
+  height: 20px;
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet: 768px and above */
+@media (min-width: 768px) {
+  .dashboard-content {
+    padding: 24px 24px 76px 24px;
+  }
+
+  .welcome-section {
+    margin-bottom: 40px;
+  }
+
+  .welcome-section h2 {
+    font-size: 28px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    margin: 32px 0 16px 0;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+}
+
+/* Desktop: 1024px and above */
+@media (min-width: 1024px) {
+  .dashboard-content {
+    padding: 32px 32px 76px 32px;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  .action-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+}
+
+/* Mobile: 480px and below */
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 12px 12px 76px 12px;
+  }
+
+  .welcome-section {
+    margin-bottom: 24px;
+  }
+
+  .welcome-section h2 {
+    font-size: 20px;
+  }
+
+  .section-title {
+    font-size: 14px;
+    margin: 20px 0 10px 0;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
