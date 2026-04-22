@@ -75,6 +75,62 @@
   margin-bottom: 32px;
 }
 
+/* Success Message Container */
+.success-container {
+  background: #d1fae5;
+  border: 1px solid #6ee7b7;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease;
+}
+
+.success-message {
+  color: #059669;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Error Message Container */
+.error-container {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: slideIn 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-message {
+  color: #dc2626;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+  flex: 1;
+}
+
+.dismiss-btn {
+  background-color: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dismiss-btn:hover {
+  background-color: #b91c1c;
+  transform: translateY(-2px);
+}
+
 .batches-grid {
   display: grid;
   grid-template-columns: 1fr;

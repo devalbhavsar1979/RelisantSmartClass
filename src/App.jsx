@@ -4,6 +4,10 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Batches from './pages/Batches'
 import AddBatch from './pages/AddBatch'
+import AddStudent from './pages/AddStudent'
+import Students from './pages/Students'
+import Attendance from './pages/Attendance'
+import Fees from './pages/Fees'
 import { clearUserFromStorage } from './services/supabaseClient'
 
 /**
@@ -57,6 +61,11 @@ function App() {
             <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
             <Route path="/batches" element={<Batches onLogout={handleLogout} />} />
             <Route path="/batches/add" element={<AddBatch onLogout={handleLogout} />} />
+            <Route path="/batches/edit" element={<AddBatch onLogout={handleLogout} />} />
+            <Route path="/students" element={<Students onLogout={handleLogout} />} />
+            <Route path="/students/add" element={<AddStudent onLogout={handleLogout} />} />
+            <Route path="/attendance" element={<Attendance onLogout={handleLogout} />} />
+            <Route path="/fees" element={<Fees onLogout={handleLogout} />} />
             {/* Redirect any other route to dashboard if logged in */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </>

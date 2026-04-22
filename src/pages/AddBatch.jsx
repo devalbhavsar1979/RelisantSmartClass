@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import '../styles/pages/AddBatch.css'
@@ -8,12 +8,17 @@ import { supabase } from '../services/supabaseClient'
 
 /**
  * AddBatch Component
- * Form page for creating a new tuition batch
+ * Form page for creating a new tuition batch or editing an existing batch
  * Integrates with Supabase database
  * Mobile-first responsive design
  */
 function AddBatch({ onLogout }) {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Detect if this is edit mode
+  const batchFromState = location.state?.batch
+  const isEditMode = !!batchFromState
 
   // Form state - mapped to Supabase batch table schema
   const [formData, setFormData] = useState({
@@ -35,6 +40,7 @@ function AddBatch({ onLogout }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [isLoadingBatch, setIsLoadingBatch] = useState(isEditMode)
 
   // Subject options
   const subjectOptions = ['Maths', 'Science', 'Physics', 'Chemistry', 'Biology', 'English', 'Hindi', 'Social Studies']
@@ -44,6 +50,26 @@ function AddBatch({ onLogout }) {
 
   // Schedule days options (will be stored as comma-separated string)
   const daysOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+  /**
+   * Prefill form with batch data when in edit mode
+   */
+  useEffect(() => {
+    if (isEditMode && batchFromState) {
+      setFormData({
+        batch_name: batchFromState.batch_name || '',
+        subject: batchFromState.subject || '',
+        grade: batchFromState.grade || '',
+        schedule: batchFromState.schedule || '',
+        start_time: batchFromState.start_time || '',
+        end_time: batchFromState.end_time || '',
+        fee_amount: batchFromState.fee_amount ? String(batchFromState.fee_amount) : '',
+        max_capacity: batchFromState.max_capacity ? String(batchFromState.max_capacity) : '',
+        description: batchFromState.description || ''
+      })
+      setIsLoadingBatch(false)
+    }
+  }, [isEditMode, batchFromState])
 
   /**
    * Handle text input changes
@@ -131,9 +157,10 @@ function AddBatch({ onLogout }) {
     }
 
     // Fee Amount required and must be numeric
-    if (!formData.fee_amount.trim()) {
+    const feeAmountStr = String(formData.fee_amount).trim()
+    if (!feeAmountStr) {
       newErrors.fee_amount = 'Fee amount is required'
-    } else if (isNaN(formData.fee_amount)) {
+    } else if (isNaN(feeAmountStr)) {
       newErrors.fee_amount = 'Fee amount must be a valid number'
     }
 
@@ -142,12 +169,15 @@ function AddBatch({ onLogout }) {
   }
 
   /**
-   * Handle form submission - Insert into Supabase
+   * Handle form submission - Insert into or Update Supabase depending on mode
    */
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!validateForm()) {
+      setSubmitError('Please fix all required fields to continue.')
+      // Scroll to top to show error message
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -155,7 +185,7 @@ function AddBatch({ onLogout }) {
       setIsSubmitting(true)
       setSubmitError(null)
 
-      // Prepare data for Supabase insert
+      // Prepare data for Supabase
       const batchData = {
         batch_name: formData.batch_name.trim(),
         subject: formData.subject.trim(),
@@ -169,30 +199,60 @@ function AddBatch({ onLogout }) {
         status: 'Active' // Default status
       }
 
-      // Insert into Supabase
-      const { data, error: insertError } = await supabase
-        .from('batch')
-        .insert([batchData])
-        .select()
+      if (isEditMode) {
+        // UPDATE mode - Update existing batch
+        console.log('Updating batch with ID:', batchFromState.batch_id)
+        console.log('Update data:', batchData)
+        
+        const { error: updateError } = await supabase
+          .from('batch')
+          .update(batchData)
+          .eq('batch_id', batchFromState.batch_id)
 
-      if (insertError) {
-        console.error('Error creating batch:', insertError)
-        setSubmitError(insertError.message || 'Failed to create batch. Please try again.')
-        setIsSubmitting(false)
-        return
+        if (updateError) {
+          console.error('Error updating batch:', updateError)
+          setSubmitError(`Failed to update batch: ${updateError.message || 'Please try again.'}`)
+          setIsSubmitting(false)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return
+        }
+
+        console.log('Batch updated successfully')
+        // Show success message
+        setShowSuccess(true)
+
+        // Redirect to batches page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/batches')
+        }, 1500)
+      } else {
+        // INSERT mode - Create new batch
+        const { data, error: insertError } = await supabase
+          .from('batch')
+          .insert([batchData])
+          .select()
+
+        if (insertError) {
+          console.error('Error creating batch:', insertError)
+          setSubmitError(`Failed to create batch: ${insertError.message || 'Please try again.'}`)
+          setIsSubmitting(false)
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          return
+        }
+
+        // Show success message
+        setShowSuccess(true)
+
+        // Redirect to batches page after 1.5 seconds
+        setTimeout(() => {
+          navigate('/batches')
+        }, 1500)
       }
-
-      // Show success message
-      setShowSuccess(true)
-
-      // Redirect to batches page after 1.5 seconds
-      setTimeout(() => {
-        navigate('/batches')
-      }, 1500)
     } catch (err) {
       console.error('Unexpected error:', err)
-      setSubmitError('An unexpected error occurred. Please try again.')
+      setSubmitError(`An unexpected error occurred: ${err.message || 'Please try again.'}`)
       setIsSubmitting(false)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -213,23 +273,34 @@ function AddBatch({ onLogout }) {
       <main className="add-batch-content">
         {/* Page Header with Back Button */}
         <div className="page-header">
-          <button className="back-btn" onClick={handleCancel} title="Go back" disabled={isSubmitting}>
+          <button className="back-btn" onClick={handleCancel} title="Go back" disabled={isSubmitting || isLoadingBatch}>
             <FaArrowLeft size={20} />
           </button>
-          <h1 className="page-title">Add New Batch</h1>
+          <h1 className="page-title">
+            {isEditMode ? 'Edit Batch' : 'Add New Batch'}
+          </h1>
           <div className="spacer"></div>
         </div>
+
+        {/* Loading State */}
+        {isLoadingBatch && (
+          <section className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading batch details...</p>
+          </section>
+        )}
 
         {/* Success Message */}
         {showSuccess && (
           <div className="success-container">
             <div className="success-message">
-              ✓ Batch created successfully! Redirecting...
+              ✓ Batch {isEditMode ? 'updated' : 'created'} successfully! Redirecting...
             </div>
           </div>
         )}
 
         {/* Form Container */}
+        {!isLoadingBatch && (
         <div className="form-card">
           <form onSubmit={handleSubmit}>
             {/* Submit Error Message */}
@@ -410,11 +481,12 @@ function AddBatch({ onLogout }) {
                 className="btn btn-save"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Saving...' : 'Save Batch'}
+                {isSubmitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Batch' : 'Save Batch')}
               </button>
             </div>
           </form>
         </div>
+        )}
 
         {/* Spacer for bottom nav */}
         <div className="nav-spacer"></div>

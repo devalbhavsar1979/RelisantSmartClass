@@ -1,0 +1,211 @@
+/* Student Attendance Card Styles */
+
+.student-attendance-card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: all 0.3s ease;
+  border: 2px solid #e2e8f0;
+}
+
+.student-attendance-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: #cbd5e1;
+}
+
+/* Student Info Section */
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.student-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.student-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-id {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+  font-weight: 500;
+}
+
+/* Attendance Status Section */
+.attendance-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.status-badge.status-present {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #15803d;
+}
+
+.status-badge.status-absent {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
+}
+
+.status-badge.status-pending {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #6b7280;
+}
+
+/* Attendance Actions */
+.attendance-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.attendance-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  background: white;
+}
+
+.attendance-btn > span {
+  display: none;
+}
+
+.attendance-btn.present-btn {
+  border-color: #16a34a;
+  color: #16a34a;
+}
+
+.attendance-btn.present-btn:hover:not(.active) {
+  background: #f0fdf4;
+}
+
+.attendance-btn.present-btn.active {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.attendance-btn.absent-btn {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.attendance-btn.absent-btn:hover:not(.active) {
+  background: #fef2f2;
+}
+
+.attendance-btn.absent-btn.active {
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: white;
+  border-color: transparent;
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+  .student-attendance-card {
+    padding: 16px;
+  }
+
+  .attendance-btn > span {
+    display: inline;
+  }
+
+  .student-name {
+    font-size: 15px;
+  }
+
+  .student-id {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .student-attendance-card {
+    flex-wrap: wrap;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .student-info {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .attendance-status {
+    flex: 0 1 auto;
+  }
+
+  .status-badge {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .attendance-actions {
+    flex: 1 1 100%;
+    gap: 6px;
+  }
+
+  .attendance-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .student-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 12px;
+  }
+}

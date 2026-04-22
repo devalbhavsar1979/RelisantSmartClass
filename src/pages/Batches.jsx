@@ -20,6 +20,9 @@ function Batches({ onLogout }) {
   const [batches, setBatches] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [deleteError, setDeleteError] = useState(null)
 
   /**
    * Fetch batches from Supabase on component mount or when returning from AddBatch
@@ -30,31 +33,56 @@ function Batches({ onLogout }) {
 
   /**
    * Fetch batches from Supabase database
+   * Also fetches enrollment data to calculate student count per batch
    */
   const fetchBatches = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const { data, error: supabaseError } = await supabase
+      // Fetch all batches
+      const { data: batchData, error: batchError } = await supabase
         .from('batch')
         .select('*')
         .order('created_at', { ascending: false })
 
-      if (supabaseError) {
-        console.error('Error fetching batches:', supabaseError)
+      if (batchError) {
+        console.error('Error fetching batches:', batchError)
         setError('Failed to load batches. Please try again.')
         setIsLoading(false)
         return
       }
 
+      // Fetch all enrollment records to count students per batch
+      const { data: enrollmentData, error: enrollmentError } = await supabase
+        .from('enrollment')
+        .select('batch_id')
+
+      if (enrollmentError) {
+        console.error('Error fetching enrollment data:', enrollmentError)
+        // Continue with zero student count if enrollment fetch fails
+        console.warn('Proceeding with zero student counts')
+      }
+
+      // Create a mapping of batch_id -> student count
+      const studentCountMap = {}
+      if (enrollmentData) {
+        enrollmentData.forEach((enrollment) => {
+          if (enrollment.batch_id) {
+            studentCountMap[enrollment.batch_id] = 
+              (studentCountMap[enrollment.batch_id] || 0) + 1
+          }
+        })
+      }
+
       // Transform Supabase data to match BatchCard component structure
-      const transformedBatches = data.map((batch) => ({
+      const transformedBatches = batchData.map((batch) => ({
         id: batch.batch_id,
+        batch_id: batch.batch_id, // Keep for editing
         name: batch.batch_name,
         grade: batch.grade,
         subject: batch.subject,
-        students: batch.max_capacity || 0, // Using max_capacity as students count
+        students: studentCountMap[batch.batch_id] || 0, // Real student count from enrollment
         fees: `₹${batch.fee_amount}`,
         days: batch.schedule || 'To be scheduled',
         location: 'Center', // Default location - can be extended to Supabase
@@ -64,7 +92,14 @@ function Batches({ onLogout }) {
         status: batch.status,
         description: batch.description,
         created_at: batch.created_at,
-        updated_at: batch.updated_at
+        updated_at: batch.updated_at,
+        // Store original values for editing
+        batch_name: batch.batch_name,
+        schedule: batch.schedule,
+        start_time: batch.start_time,
+        end_time: batch.end_time,
+        fee_amount: batch.fee_amount,
+        max_capacity: batch.max_capacity
       }))
 
       setBatches(transformedBatches)
@@ -80,20 +115,82 @@ function Batches({ onLogout }) {
     navigate('/batches/add')
   }
 
+  /**
+   * Handle edit batch - Navigate to AddBatch page with batch data
+   */
+  const handleEditBatch = (batch) => {
+    // Pass batch data through navigation state for prefilling the form
+    navigate('/batches/edit', { state: { batch } })
+  }
+
+  /**
+   * Handle delete batch - Show confirmation and delete from Supabase
+   */
+  const handleDeleteBatch = async (batchId, batchName) => {
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${batchName}"?\n\nThis action cannot be undone.`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setIsDeleting(true)
+      setDeleteError(null)
+      setSuccessMessage('')
+
+      // Delete the batch from Supabase
+      const { error: deleteError } = await supabase
+        .from('batch')
+        .delete()
+        .eq('batch_id', batchId)
+
+      if (deleteError) {
+        console.error('Error deleting batch:', deleteError)
+        
+        // Check if error is due to foreign key constraint (enrollments exist)
+        if (deleteError.message && deleteError.message.includes('foreign key')) {
+          setDeleteError(
+            `Cannot delete batch "${batchName}" because it has enrolled students. Please remove all students first.`
+          )
+        } else {
+          setDeleteError(deleteError.message || 'Failed to delete batch. Please try again.')
+        }
+        setIsDeleting(false)
+        return
+      }
+
+      // Show success message
+      setSuccessMessage(`Batch "${batchName}" deleted successfully!`)
+
+      // Refresh the batches list after 1 second
+      setTimeout(() => {
+        setSuccessMessage('')
+        fetchBatches()
+      }, 1500)
+    } catch (err) {
+      console.error('Unexpected error deleting batch:', err)
+      setDeleteError('An unexpected error occurred. Please try again.')
+      setIsDeleting(false)
+    }
+  }
+
   const handleTakeAttendance = (batchId, batchName) => {
-    console.log(`Take Attendance for Batch ${batchId}: ${batchName}`)
+    navigate(`/attendance?batch_id=${batchId}`)
   }
 
   const handleCollectFees = (batchId, batchName) => {
-    console.log(`Collect Fees for Batch ${batchId}: ${batchName}`)
+    navigate(`/fees?batch_id=${batchId}`)
   }
 
   const handleSendCommunication = (batchId, batchName) => {
     console.log(`Send Communication for Batch ${batchId}: ${batchName}`)
   }
 
-  const handleAddStudent = (batchId, batchName) => {
-    console.log(`Add Student to Batch ${batchId}: ${batchName}`)
+  const handleViewStudents = (batchId, batchName) => {
+    navigate(`/students?batch_id=${batchId}`)
   }
 
   return (
@@ -116,6 +213,30 @@ function Batches({ onLogout }) {
             <span>Add New Batch</span>
           </button>
         </section>
+
+        {/* Success Message */}
+        {successMessage && (
+          <section className="batches-section">
+            <div className="success-container">
+              <div className="success-message">✓ {successMessage}</div>
+            </div>
+          </section>
+        )}
+
+        {/* Delete Error Message */}
+        {deleteError && (
+          <section className="batches-section">
+            <div className="error-container">
+              <p className="error-message">✗ {deleteError}</p>
+              <button 
+                className="dismiss-btn" 
+                onClick={() => setDeleteError(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -160,7 +281,10 @@ function Batches({ onLogout }) {
                   onTakeAttendance={() => handleTakeAttendance(batch.id, batch.name)}
                   onCollectFees={() => handleCollectFees(batch.id, batch.name)}
                   onSendCommunication={() => handleSendCommunication(batch.id, batch.name)}
-                  onAddStudent={() => handleAddStudent(batch.id, batch.name)}
+                  onAddStudent={() => handleViewStudents(batch.id, batch.name)}
+                  onEdit={() => handleEditBatch(batch)}
+                  onDelete={() => handleDeleteBatch(batch.id, batch.name)}
+                  disabled={isDeleting}
                 />
               ))}
             </div>

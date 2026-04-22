@@ -1,22 +1,52 @@
 import '../styles/components/BatchCard.css'
-import { FaCheckCircle, FaWallet, FaComments, FaUsers, FaMoneyBill, FaCalendar, FaMapMarkerAlt, FaClock, FaUserPlus } from 'react-icons/fa'
+import { FaCheckCircle, FaWallet, FaComments, FaUsers, FaMoneyBill, FaCalendar, FaMapMarkerAlt, FaClock, FaUserPlus, FaEdit, FaTrash } from 'react-icons/fa'
 
 /**
  * BatchCard Component
  * Displays individual batch information with action buttons
+ * Includes Edit and Delete buttons in the header
  */
 function BatchCard({
   batch,
   onTakeAttendance,
   onCollectFees,
   onSendCommunication,
-  onAddStudent
+  onAddStudent,
+  onEdit,
+  onDelete
 }) {
+  // Debug: Log batch object to see what properties it has
+  console.log('BatchCard received batch:', batch)
+  
   return (
     <div className="batch-card">
-      {/* Batch Header */}
+      {/* Batch Header with Edit/Delete */}
       <div className="batch-header">
-        <h3 className="batch-name">{batch.name}</h3>
+        <h3 className="batch-name">
+          {batch.batch_name || 'Untitled Batch'}
+        </h3>
+        <div className="batch-header-actions">
+          <button 
+            className="header-action-btn edit-btn" 
+            onClick={onEdit}
+            title="Edit Batch"
+            aria-label="Edit Batch"
+          >
+            <FaEdit size={55} />
+          </button>
+          <button 
+            className="header-action-btn delete-btn" 
+            onClick={onDelete}
+            title="Delete Batch"
+            aria-label="Delete Batch"
+          >
+            <FaTrash size={22} />
+          </button>
+        </div>
+      </div>
+
+      {/* Grade Display */}
+      <div className="batch-grade-section">
         <span className="batch-grade">{batch.grade}</span>
       </div>
 
@@ -65,6 +95,15 @@ function BatchCard({
 
       {/* Action Buttons */}
       <div className="batch-actions">
+         <button
+          className="action-btn add-student-btn"
+          onClick={onAddStudent}
+          title="View Students"
+        >
+          <FaUserPlus size={18} />
+          <span>View Students</span>
+        </button>
+        
         <button
           className="action-btn attendance-btn"
           onClick={onTakeAttendance}
@@ -90,15 +129,6 @@ function BatchCard({
         >
           <FaComments size={18} />
           <span>Send Communication</span>
-        </button>
-
-        <button
-          className="action-btn add-student-btn"
-          onClick={onAddStudent}
-          title="Add Student"
-        >
-          <FaUserPlus size={18} />
-          <span>Add Student</span>
         </button>
       </div>
     </div>
