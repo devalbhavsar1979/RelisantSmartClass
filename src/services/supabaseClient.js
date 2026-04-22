@@ -156,3 +156,351 @@ export function clearUserFromStorage() {
     console.error('Error clearing user from storage:', error)
   }
 }
+
+/**
+ * Register a new group tuition and create primary login user
+ * 
+ * Steps:
+ * 1. Insert group tuition details into group_tuition table
+ * 2. Create auth user in Supabase Auth
+ * 3. Insert user record into users table with admin role
+ * 
+ * @param {object} groupData - Group tuition registration data
+ * @param {string} groupData.groupName - Name of the group tuition
+ * @param {string} groupData.address - Address of the group tuition
+ * @param {string} groupData.contactNumber - Contact number of group tuition
+ * @param {string} groupData.contactPersonName - Name of contact person
+ * @param {string} groupData.contactPersonNumber - Phone of contact person
+ * @param {string} groupData.primaryEmail - Email for primary login user
+ * @param {string} groupData.password - Password for primary login user (min 6 chars)
+ * 
+ * @returns {Promise<{success: boolean, data: object|null, error: string|null}>}
+ */
+export async function registerGroupTuition(groupData) {
+  try {
+    const {
+      groupName,
+      address,
+      contactNumber,
+      contactPersonName,
+      contactPersonNumber,
+      primaryEmail,
+      password
+    } = groupData
+
+    // Step 1: Insert into group_tuition table
+    const { data: groupData_result, error: groupError } = await supabase
+      .from('group_tuition')
+      .insert([{
+        group_name: groupName,
+        address: address,
+        contact_number: contactNumber,
+        contact_person_name: contactPersonName,
+        contact_person_number: contactPersonNumber,
+        primary_email: primaryEmail
+      }])
+      .select()
+
+    if (groupError) {
+      console.error('Group tuition insert error:', groupError)
+      return {
+        success: false,
+        data: null,
+        error: `Failed to register group tuition: ${groupError.message}`
+      }
+    }
+
+    if (!groupData_result || groupData_result.length === 0) {
+      return {
+        success: false,
+        data: null,
+        error: 'Failed to retrieve inserted group tuition data'
+      }
+    }
+
+    const groupTuitionId = groupData_result[0].group_tuition_id
+
+    // Step 2: Create Supabase Auth user
+    // Note: Using supabase.auth.signUp() if you want email verification
+    // or a backend endpoint if you want to bypass verification
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: primaryEmail,
+      password: password
+    })
+
+    if (authError) {
+      console.error('Auth user creation error:', authError)
+      // If auth user creation fails, we should ideally delete the group tuition
+      // But for now, we'll just return the error
+      return {
+        success: false,
+        data: null,
+        error: `Failed to create login account: ${authError.message}`
+      }
+    }
+
+    // Step 3: Insert into users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert([{
+        email: primaryEmail,
+        full_name: contactPersonName,
+        role: 'admin',
+        group_tuition_id: groupTuitionId,
+        is_active: true,
+        hashed_password: password // For development - in production use bcrypt
+      }])
+      .select()
+
+    if (userError) {
+      console.error('User insert error:', userError)
+      return {
+        success: false,
+        data: null,
+        error: `Failed to create user record: ${userError.message}`
+      }
+    }
+
+    // Success - return group tuition data
+    return {
+      success: true,
+      data: {
+        groupTuitionId: groupTuitionId,
+        groupName: groupName,
+        primaryEmail: primaryEmail
+      },
+      error: null
+    }
+  } catch (error) {
+    console.error('Registration error:', error)
+    return {
+      success: false,
+      data: null,
+      error: error.message || 'An unexpected error occurred during registration'
+    }
+  }
+}
+
+/**
+ * Fetch user data including user record and group tuition data
+ * Used in UserContext to load complete user information
+ * 
+ * @param {string} email - User email address
+ * @returns {Promise<{user: object|null, groupData: object|null, error: string|null}>}
+ */
+export async function fetchUserDataByEmail(email) {
+  try {
+    // Fetch user record from users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single()
+
+    if (userError) {
+      console.error('Error fetching user record:', userError)
+      return {
+        user: null,
+        groupData: null,
+        error: `Failed to load user data: ${userError.message}`
+      }
+    }
+
+    if (!userData) {
+      return {
+        user: null,
+        groupData: null,
+        error: 'User record not found'
+      }
+    }
+
+    // Fetch group tuition data if user has group_tuition_id
+    let groupData = null
+    if (userData.group_tuition_id) {
+      const { data: groupRecord, error: groupError } = await supabase
+        .from('group_tuition')
+        .select('*')
+        .eq('group_tuition_id', userData.group_tuition_id)
+        .single()
+
+      if (groupError) {
+        console.error('Error fetching group data:', groupError)
+        // Don't fail if group data fetch fails, it's optional
+      } else {
+        groupData = groupRecord
+      }
+    }
+
+    return {
+      user: userData,
+      groupData: groupData,
+      error: null
+    }
+  } catch (error) {
+    console.error('Unexpected error fetching user data:', error)
+    return {
+      user: null,
+      groupData: null,
+      error: error.message || 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Fetch batches for a specific group tuition
+ * Used for multi-tenant batch filtering
+ * 
+ * @param {number} groupTuitionId - ID of the group tuition
+ * @returns {Promise<{data: array|null, error: string|null}>}
+ */
+export async function fetchBatchesByGroup(groupTuitionId) {
+  try {
+    const { data, error } = await supabase
+      .from('batch')
+      .select('*')
+      .eq('group_tuition_id', groupTuitionId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching batches:', error)
+      return {
+        data: null,
+        error: `Failed to load batches: ${error.message}`
+      }
+    }
+
+    return {
+      data: data || [],
+      error: null
+    }
+  } catch (error) {
+    console.error('Unexpected error fetching batches:', error)
+    return {
+      data: null,
+      error: error.message || 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Insert a new batch with group_tuition_id
+ * Ensures batch is associated with the correct group
+ * 
+ * @param {object} batchData - Batch data to insert
+ * @param {number} groupTuitionId - ID of the group tuition
+ * @returns {Promise<{data: object|null, error: string|null}>}
+ */
+export async function insertBatchWithGroup(batchData, groupTuitionId) {
+  try {
+    const { data, error } = await supabase
+      .from('batch')
+      .insert([{
+        ...batchData,
+        group_tuition_id: groupTuitionId
+      }])
+      .select()
+
+    if (error) {
+      console.error('Error inserting batch:', error)
+      return {
+        data: null,
+        error: `Failed to create batch: ${error.message}`
+      }
+    }
+
+    return {
+      data: data ? data[0] : null,
+      error: null
+    }
+  } catch (error) {
+    console.error('Unexpected error inserting batch:', error)
+    return {
+      data: null,
+      error: error.message || 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Update a batch with group_tuition_id verification
+ * Ensures batch can only be updated by the correct group
+ * 
+ * @param {number} batchId - ID of the batch to update
+ * @param {object} batchData - Data to update
+ * @param {number} groupTuitionId - ID of the group tuition (for verification)
+ * @returns {Promise<{data: object|null, error: string|null}>}
+ */
+export async function updateBatchWithGroup(batchId, batchData, groupTuitionId) {
+  try {
+    const { data, error } = await supabase
+      .from('batch')
+      .update(batchData)
+      .eq('batch_id', batchId)
+      .eq('group_tuition_id', groupTuitionId)
+      .select()
+
+    if (error) {
+      console.error('Error updating batch:', error)
+      return {
+        data: null,
+        error: `Failed to update batch: ${error.message}`
+      }
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        data: null,
+        error: 'Batch not found or you do not have permission to update it'
+      }
+    }
+
+    return {
+      data: data[0],
+      error: null
+    }
+  } catch (error) {
+    console.error('Unexpected error updating batch:', error)
+    return {
+      data: null,
+      error: error.message || 'An unexpected error occurred'
+    }
+  }
+}
+
+/**
+ * Delete a batch with group_tuition_id verification
+ * Ensures batch can only be deleted by the correct group
+ * 
+ * @param {number} batchId - ID of the batch to delete
+ * @param {number} groupTuitionId - ID of the group tuition (for verification)
+ * @returns {Promise<{success: boolean, error: string|null}>}
+ */
+export async function deleteBatchWithGroup(batchId, groupTuitionId) {
+  try {
+    const { error } = await supabase
+      .from('batch')
+      .delete()
+      .eq('batch_id', batchId)
+      .eq('group_tuition_id', groupTuitionId)
+
+    if (error) {
+      console.error('Error deleting batch:', error)
+      return {
+        success: false,
+        error: `Failed to delete batch: ${error.message}`
+      }
+    }
+
+    return {
+      success: true,
+      error: null
+    }
+  } catch (error) {
+    console.error('Unexpected error deleting batch:', error)
+    return {
+      success: false,
+      error: error.message || 'An unexpected error occurred'
+    }
+  }
+}
+

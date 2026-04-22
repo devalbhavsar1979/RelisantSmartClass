@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import Header from '../components/Header'
 import BatchCard from '../components/BatchCard'
 import BottomNav from '../components/BottomNav'
@@ -6,15 +6,18 @@ import '../styles/pages/Batches.css'
 import { FaPlus } from 'react-icons/fa'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
+import { UserContext } from '../contexts/UserContext'
 
 /**
  * Batches Component
  * Displays and manages tuition batches from Supabase
+ * Filtered by user's group_tuition_id for multi-tenant support
  * Mobile-first responsive design
  */
 function Batches({ onLogout }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { userData, isLoading: userDataLoading } = useContext(UserContext)
   
   // State management
   const [batches, setBatches] = useState([])
@@ -28,22 +31,37 @@ function Batches({ onLogout }) {
    * Fetch batches from Supabase on component mount or when returning from AddBatch
    */
   useEffect(() => {
-    fetchBatches()
-  }, [location])
+    // Wait for user data to load before fetching batches
+    if (!userDataLoading && userData && userData.group_tuition_id) {
+      fetchBatches()
+    } else if (!userDataLoading && (!userData || !userData.group_tuition_id)) {
+      setError('Unable to load your group information')
+      setIsLoading(false)
+    }
+  }, [location, userData, userDataLoading])
 
   /**
-   * Fetch batches from Supabase database
+   * Fetch batches from Supabase database filtered by user's group_tuition_id
    * Also fetches enrollment data to calculate student count per batch
+   * Multi-tenant: Only shows batches belonging to the user's group
    */
   const fetchBatches = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Fetch all batches
+      // Only fetch if user has group_tuition_id
+      if (!userData || !userData.group_tuition_id) {
+        setError('Unable to load your group information')
+        setIsLoading(false)
+        return
+      }
+
+      // Fetch batches filtered by group_tuition_id
       const { data: batchData, error: batchError } = await supabase
         .from('batch')
         .select('*')
+        .eq('group_tuition_id', userData.group_tuition_id)
         .order('created_at', { ascending: false })
 
       if (batchError) {
@@ -125,6 +143,7 @@ function Batches({ onLogout }) {
 
   /**
    * Handle delete batch - Show confirmation and delete from Supabase
+   * Includes group_tuition_id filter for secure multi-tenant deletion
    */
   const handleDeleteBatch = async (batchId, batchName) => {
     // Show confirmation dialog
@@ -141,11 +160,12 @@ function Batches({ onLogout }) {
       setDeleteError(null)
       setSuccessMessage('')
 
-      // Delete the batch from Supabase
+      // Delete the batch from Supabase with group_tuition_id filter
       const { error: deleteError } = await supabase
         .from('batch')
         .delete()
         .eq('batch_id', batchId)
+        .eq('group_tuition_id', userData.group_tuition_id)
 
       if (deleteError) {
         console.error('Error deleting batch:', deleteError)
@@ -186,7 +206,7 @@ function Batches({ onLogout }) {
   }
 
   const handleSendCommunication = (batchId, batchName) => {
-    console.log(`Send Communication for Batch ${batchId}: ${batchName}`)
+    navigate(`/communication?batch_id=${batchId}`)
   }
 
   const handleViewStudents = (batchId, batchName) => {

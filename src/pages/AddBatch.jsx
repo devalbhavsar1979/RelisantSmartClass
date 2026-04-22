@@ -1,20 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import '../styles/pages/AddBatch.css'
 import { FaArrowLeft } from 'react-icons/fa'
 import { supabase } from '../services/supabaseClient'
+import { UserContext } from '../contexts/UserContext'
 
 /**
  * AddBatch Component
  * Form page for creating a new tuition batch or editing an existing batch
  * Integrates with Supabase database
+ * Includes group_tuition_id for multi-tenant support
  * Mobile-first responsive design
  */
 function AddBatch({ onLogout }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const { userData, isLoading: userDataLoading } = useContext(UserContext)
 
   // Detect if this is edit mode
   const batchFromState = location.state?.batch
@@ -170,6 +173,7 @@ function AddBatch({ onLogout }) {
 
   /**
    * Handle form submission - Insert into or Update Supabase depending on mode
+   * Includes group_tuition_id for multi-tenant support
    */
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -177,6 +181,19 @@ function AddBatch({ onLogout }) {
     if (!validateForm()) {
       setSubmitError('Please fix all required fields to continue.')
       // Scroll to top to show error message
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    // Check if user data is loaded
+    if (userDataLoading) {
+      setSubmitError('Loading your information, please wait...')
+      return
+    }
+
+    // Check if user data is available
+    if (!userData || !userData.group_tuition_id) {
+      setSubmitError('Unable to determine your group. Please refresh the page and try again.')
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
@@ -196,11 +213,12 @@ function AddBatch({ onLogout }) {
         fee_amount: parseFloat(formData.fee_amount),
         max_capacity: formData.max_capacity ? parseInt(formData.max_capacity) : null,
         description: formData.description.trim() || null,
-        status: 'Active' // Default status
+        status: 'Active', // Default status
+        group_tuition_id: userData.group_tuition_id // Multi-tenant: Add group ID
       }
 
       if (isEditMode) {
-        // UPDATE mode - Update existing batch
+        // UPDATE mode - Update existing batch with group_tuition_id filter
         console.log('Updating batch with ID:', batchFromState.batch_id)
         console.log('Update data:', batchData)
         
@@ -208,6 +226,7 @@ function AddBatch({ onLogout }) {
           .from('batch')
           .update(batchData)
           .eq('batch_id', batchFromState.batch_id)
+          .eq('group_tuition_id', userData.group_tuition_id) // Ensure user owns this batch
 
         if (updateError) {
           console.error('Error updating batch:', updateError)
@@ -226,7 +245,7 @@ function AddBatch({ onLogout }) {
           navigate('/batches')
         }, 1500)
       } else {
-        // INSERT mode - Create new batch
+        // INSERT mode - Create new batch with group_tuition_id
         const { data, error: insertError } = await supabase
           .from('batch')
           .insert([batchData])
@@ -472,16 +491,16 @@ function AddBatch({ onLogout }) {
                 type="button" 
                 className="btn btn-cancel" 
                 onClick={handleCancel}
-                disabled={isSubmitting}
+                disabled={isSubmitting || userDataLoading}
               >
                 Cancel
               </button>
               <button 
                 type="submit" 
                 className="btn btn-save"
-                disabled={isSubmitting}
+                disabled={isSubmitting || userDataLoading}
               >
-                {isSubmitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Batch' : 'Save Batch')}
+                {userDataLoading ? 'Loading...' : isSubmitting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Batch' : 'Save Batch')}
               </button>
             </div>
           </form>

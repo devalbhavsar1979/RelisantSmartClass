@@ -13,7 +13,8 @@ function BottomNav() {
     { id: 'home', label: 'Home', icon: '🏠', path: '/' },
     { id: 'batches', label: 'Batches', icon: '📚', path: '/batches' },
     { id: 'attendance', label: 'Attendance', icon: '✓', path: '/attendance' },
-    { id: 'fees', label: 'Fees', icon: '💰', path: '/fees' }
+    { id: 'fees', label: 'Fees', icon: '💰', path: '/fees' },
+    { id: 'communication', label: 'Communication', icon: '💬', path: '/communication' }
   ]
 
   const currentPath = location.pathname

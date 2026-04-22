@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import '../styles/pages/Login.css'
 import RelisantLogo from '../components/images/RelisantSmartClass.png'
 import { authenticateUser, saveUserToStorage } from '../services/supabaseClient'
@@ -13,6 +14,7 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   /**
    * Handle form submission
@@ -108,6 +110,16 @@ function Login({ onLogin }) {
             disabled={isLoading}
           >
             {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+
+          {/* Register Button */}
+          <button
+            type="button"
+            className="register-btn"
+            onClick={() => navigate('/register-group-tuition')}
+            disabled={isLoading}
+          >
+            Register New Group Tuition
           </button>
         </form>
 

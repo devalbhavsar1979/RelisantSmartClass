@@ -288,7 +288,9 @@ function Fees({ onLogout }) {
         filteredPending = filteredPending.filter((fee) => fee.student_id === selectedStudentId)
       }
       return filteredPending.map((fee) => ({
-        student_name: fee.student?.student_name || 'Unknown',
+        student_id: fee.student_id,
+        batch_id: fee.batch_id,
+        student_name: fee.student?.name || 'Unknown',
         batch_name: fee.batch?.batch_name || 'Unknown',
         grade: fee.batch?.grade || '',
         amount: fee.amount,
@@ -426,7 +428,7 @@ function Fees({ onLogout }) {
                 <option value="">All Students ({students.length})</option>
                 {students.map((student) => (
                   <option key={student.student_id} value={student.student_id}>
-                    {student.student_name} - ₹{student.due_amount.toLocaleString('en-IN')} due
+                    {student.name}
                   </option>
                 ))}
               </select>
@@ -501,7 +503,7 @@ function Fees({ onLogout }) {
               displayData.map((student) => (
                 <div key={`${student.student_id}-${student.batch_id}`} className="fees-student-card">
                   <div className="fees-student-info">
-                    <p className="fees-student-name">{student.student_name}</p>
+                    <p className="fees-student-name">{student.name}</p>
                     <p className="fees-student-batch">
                       {student.batch_name}
                       {student.grade && ` • Grade ${student.grade}`}
@@ -549,7 +551,7 @@ function Fees({ onLogout }) {
               </div>
             ) : (
               displayData.map((fee) => (
-                <div key={`${fee.student_id}-pending`} className="fees-student-card">
+                  <div key={`${fee.student_id}-${fee.batch_id}`} className="fees-student-card">
                   <div className="fees-student-info">
                     <p className="fees-student-name">{fee.student_name}</p>
                     <p className="fees-student-batch">
@@ -589,7 +591,7 @@ function Fees({ onLogout }) {
                 return (
                   <div key={index} className="fees-history-card">
                     <div className="fees-history-header">
-                      <p className="fees-history-student">{entry.student?.student_name}</p>
+                      <p className="fees-history-student">{entry.student?.name}</p>
                       <span
                         style={{
                           fontSize: '12px',
@@ -649,7 +651,7 @@ function Fees({ onLogout }) {
             <>
               {/* Student Info Box */}
               <div className="fees-info-box">
-                <strong>{selectedStudent.student_name}</strong>
+                <strong>{selectedStudent.name}</strong>
                 <div style={{ fontSize: '11px', marginTop: '4px' }}>
                   {selectedStudent.batch_name} • Grade {selectedStudent.grade}
                 </div>

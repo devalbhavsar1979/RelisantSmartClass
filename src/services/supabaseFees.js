@@ -27,6 +27,114 @@ export const getCurrentMonth = () => {
 }
 
 /**
+ * Get the number of active students for a group tuition.
+ * Counts unique students enrolled in batches belonging to the group.
+ * @param {number} groupTuitionId
+ * @returns {Promise<number>}
+ */
+export const getGroupActiveStudentCount = async (groupTuitionId) => {
+  if (!groupTuitionId) {
+    return 0
+  }
+
+  const { data: batches, error: batchError } = await supabase
+    .from('batch')
+    .select('batch_id')
+    .eq('group_tuition_id', groupTuitionId)
+
+  if (batchError) {
+    console.error('Error fetching group batches:', batchError)
+    return 0
+  }
+
+  if (!batches || batches.length === 0) {
+    return 0
+  }
+
+  const batchIds = batches.map((batch) => batch.batch_id)
+
+  const { data: enrollments, error: enrollmentError } = await supabase
+    .from('enrollment')
+    .select('student_id, student:student_id(status)')
+    .in('batch_id', batchIds)
+
+  if (enrollmentError) {
+    console.error('Error fetching enrollments for group students:', enrollmentError)
+    return 0
+  }
+
+  if (!enrollments || enrollments.length === 0) {
+    return 0
+  }
+
+  const activeEnrollments = enrollments.filter((enrollment) => {
+    if (enrollment.student && enrollment.student.status !== undefined) {
+      return enrollment.student.status === 'active'
+    }
+    return true
+  })
+
+  const uniqueStudentIds = new Set(activeEnrollments.map((enrollment) => enrollment.student_id))
+  return uniqueStudentIds.size
+}
+
+/**
+ * Get pending fee amount for a group tuition.
+ * Only includes fees for the current month and pending statuses.
+ * @param {number} groupTuitionId
+ * @returns {Promise<{totalPendingAmount:number, count:number}>}
+ */
+export const getGroupPendingFeesSummary = async (groupTuitionId) => {
+  if (!groupTuitionId) {
+    return { totalPendingAmount: 0, count: 0 }
+  }
+
+  const { data: batches, error: batchError } = await supabase
+    .from('batch')
+    .select('batch_id')
+    .eq('group_tuition_id', groupTuitionId)
+
+  if (batchError) {
+    console.error('Error fetching group batches for pending fees:', batchError)
+    return { totalPendingAmount: 0, count: 0 }
+  }
+
+  if (!batches || batches.length === 0) {
+    return { totalPendingAmount: 0, count: 0 }
+  }
+
+  const batchIds = batches.map((batch) => batch.batch_id)
+  const currentMonth = getCurrentMonth()
+
+  const { data: pendingFees, error: pendingError } = await supabase
+    .from('fees')
+    .select('amount, paid_amount, status, batch_id')
+    .eq('month', currentMonth)
+    .neq('status', 'Paid')
+    .in('batch_id', batchIds)
+
+  if (pendingError) {
+    console.error('Error fetching group pending fees:', pendingError)
+    return { totalPendingAmount: 0, count: 0 }
+  }
+
+  if (!pendingFees || pendingFees.length === 0) {
+    return { totalPendingAmount: 0, count: 0 }
+  }
+
+  const totalPendingAmount = pendingFees.reduce((sum, fee) => {
+    const amount = fee.amount || 0
+    const paid = fee.paid_amount || 0
+    return sum + Math.max(amount - paid, 0)
+  }, 0)
+
+  return {
+    totalPendingAmount,
+    count: pendingFees.length
+  }
+}
+
+/**
  * Fetch all students enrolled in a batch with their fee information
  * Joins: student -> enrollment -> batch -> fees
  * 
@@ -48,7 +156,7 @@ export const fetchStudentsWithFees = async () => {
         student:student_id (
           student_id,
           name,
-          
+          parent_contact,
           parent_email
         ),
         batch:batch_id (
@@ -62,7 +170,6 @@ export const fetchStudentsWithFees = async () => {
         `
       )
       //.eq('student.status', 'active')
-      .order('student.name', { ascending: true })
 
     if (enrollmentError) {
       console.error('Error fetching enrollments:', enrollmentError)
@@ -118,8 +225,8 @@ export const fetchStudentsWithFees = async () => {
       return {
         enrollment_id: enrollment.enrollment_id,
         student_id: enrollment.student_id,
-        student_name: enrollment.student.student_name,
-        phone: enrollment.student.phone,
+        name: enrollment.student.name,
+        parent_contact: enrollment.student.parent_contact,
         email: enrollment.student.email,
         batch_id: enrollment.batch_id,
         batch_name: enrollment.batch.batch_name,
@@ -233,11 +340,14 @@ export const getPendingFees = async (batchId = null) => {
         amount,
         paid_amount,
         status,
+        month,
         student:student_id (
-          student_name,
-          phone
+          student_id,
+          name,
+          parent_contact
         ),
         batch:batch_id (
+          batch_id,
           batch_name,
           grade
         )
@@ -251,7 +361,7 @@ export const getPendingFees = async (batchId = null) => {
       query = query.eq('batch_id', batchId)
     }
 
-    const { data, error } = await query.order('student.student_name', { ascending: true })
+    const { data, error } = await query.order('batch_id', { ascending: true })
 
     if (error) {
       console.error('Error fetching pending fees:', error)
@@ -315,16 +425,20 @@ export const getAllPaymentHistory = async () => {
       .select(
         `
         fee_id,
+        student_id,
+        batch_id,
         month,
         amount,
         paid_amount,
         status,
         payment_date,
         student:student_id (
-          student_name,
-          phone
+          student_id,
+          name,
+          parent_contact
         ),
         batch:batch_id (
+          batch_id,
           batch_name,
           grade
         )

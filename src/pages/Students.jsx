@@ -356,59 +356,49 @@ function Students({ onLogout }) {
 
         {/* Students Grid */}
         {!isLoading && students.length > 0 && (
-          <div className="students-grid">
+          <div className="students_view-grid">
             {students.map((student) => (
               <div key={student.student_id} className="student-card">
-                {/* Student Info */}
-                <div className="student-info">
-                  <h3 className="student-name">{student.name}</h3>
-                  <div className="student-details">
-                    <p>
-                      <span className="label">Gender:</span>
-                      <span className="value">{student.gender}</span>
-                    </p>
-                    <p>
-                      <span className="label">DOB:</span>
-                      <span className="value">{student.dob}</span>
-                    </p>
-                    {student.school_name && (
-                      <p>
-                        <span className="label">School:</span>
-                        <span className="value">{student.school_name}</span>
-                      </p>
-                    )}
-                    {student.parent_name && (
-                      <p>
-                        <span className="label">Parent:</span>
-                        <span className="value">{student.parent_name}</span>
-                      </p>
-                    )}
-                    {student.parent_contact && (
-                      <p>
-                        <span className="label">Contact:</span>
-                        <span className="value">{student.parent_contact}</span>
-                      </p>
-                    )}
+                <div className="student-card-header">
+                  <div>
+                    <h3 className="student_view-name">{student.name}</h3>
+                    <p className="student_view-subtitle">School: {student.school_name || 'Student details'}</p>
+                    
+                  </div>
+                  <div className="student-header-meta">
+                    {student.gender && <span className="badge">{student.gender}</span>}
+                    {student.dob && <span className="badge">{student.dob}</span>}
                   </div>
                 </div>
 
-                {/* Card Actions */}
-                <div className="card-actions">
+                <div className="student-card-details">
+                  {student.parent_name && (
+                    <div className="detail-item">
+                      <span className="detail-label">Parent: {student.parent_name} </span>
+
+                    <span className="detail-label">Contact: {student.parent_contact} </span>
+                    <span className="detail-value">Grade: {student.grade}</span>  
+                    </div>
+                  )}
+                  
+                </div>
+
+                <div className="student-card-actions">
                   <button
-                    className="edit-btn"
+                    className="action-btn edit-btn"
                     onClick={() => handleEditStudent(student)}
                     title="Edit Student"
                   >
                     <FaEdit size={16} />
-                    Edit
+                    <span>Edit</span>
                   </button>
                   <button
-                    className="delete-btn"
+                    className="action-btn delete-btn"
                     onClick={() => handleDeleteClick(student)}
                     title="Delete Student"
                   >
                     <FaTrash size={16} />
-                    Delete
+                    <span>Delete</span>
                   </button>
                 </div>
               </div>
